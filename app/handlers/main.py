@@ -14,6 +14,38 @@ from tools import *
 
 
 tdir = os.path.join(os.path.dirname(__file__), '../templates/')
+_DEBUG = True
+
+
+class BaseRequestHandler(webapp.RequestHandler):
+  """Supplies a common template generation function.
+
+  When you call generate(), we augment the template variables supplied with
+  the current user in the 'user' variable and the current webapp request
+  in the 'request' variable.
+  """
+  def generate(self, template_name, template_values={}):
+    values = {
+      'request': self.request,
+      'user': users.get_current_user(),
+      'prefs': UserPrefs.from_user(users.get_current_user()),
+      'login_url': users.create_login_url(self.request.uri),
+      'logout_url': users.create_logout_url(self.request.uri),
+      'application_name': 'App Engine Boilerplate',
+    }
+    values.update(template_values)
+    directory = os.path.dirname(__file__)
+    path = os.path.join(directory, os.path.join(tdir, template_name))
+    self.response.out.write(template.render(path, values, debug=_DEBUG))
+
+  def head(self, *args):
+    pass
+
+  def get(self, *args):
+    pass
+
+  def post(self, *args):
+    pass
 
 
 # OpenID Login
@@ -38,19 +70,9 @@ class LogOut(webapp.RequestHandler):
 
 
 # Custom sites
-class Main(webapp.RequestHandler):
-    def head(self, screen_name=None):
-        """Head is used by Twitter, else the tweet button shows 0"""
-        return
-
+class Main(BaseRequestHandler):
     def get(self):
-        user = users.get_current_user()
-        prefs = UserPrefs.from_user(user)
-
-        param = decode(self.request.get('param'))
-
-        self.response.out.write(template.render(tdir + "index.html", \
-                {"prefs": prefs}))
+        self.generate("base.html", {})
 
 
 class Account(webapp.RequestHandler):
